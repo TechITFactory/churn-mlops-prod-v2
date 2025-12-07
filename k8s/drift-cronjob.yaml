@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: churn-drift-daily
+  namespace: churn-mlops
+spec:
+  schedule: "0 1 * * *"  # daily 01:00
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+
+          containers:
+            - name: drift
+              image: techitfactory/churn-ml:0.1.2
+              imagePullPolicy: Always
+              env:
+                - name: CHURN_MLOPS_CONFIG
+                  value: /app/config/config.yaml
+              command: ["sh", "-c"]
+              args:
+                - |
+                  set -e
+                  python -m churn_mlops.monitoring.run_drift_check
+
+              volumeMounts:
+                - name: mlops-storage
+                  mountPath: /app/data
+                  subPath: data
+                - name: mlops-storage
+                  mountPath: /app/artifacts
+                  subPath: artifacts
+                - name: config
+                  mountPath: /app/config/config.yaml
+                  subPath: config.yaml
+
+          volumes:
+            - name: config
+              configMap:
+                name: churn-mlops-config
+            - name: mlops-storage
+              persistentVolumeClaim:
+                claimName: churn-mlops-pvc

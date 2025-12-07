@@ -31,8 +31,7 @@ def _load_production_model(models_dir: str):
     prod_path = Path(models_dir) / "production_latest.joblib"
     if not prod_path.exists():
         raise FileNotFoundError(
-            f"Missing production model alias: {prod_path}. "
-            f"Run ./scripts/promote_model.sh first."
+            f"Missing production model alias: {prod_path}. Run ./scripts/promote_model.sh first."
         )
 
     blob = joblib.load(prod_path)

@@ -1,0 +1,66 @@
+{{- if .Values.seedJob.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: churn-seed-model
+  labels:
+    app: churn-seed-model
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.seedJob.backoffLimit | default 1 }}
+  template:
+    metadata:
+      labels:
+        app: churn-seed-model
+    spec:
+      restartPolicy: Never
+
+      initContainers:
+        - name: init-dirs
+          image: "{{ .Values.images.busybox.repository }}:{{ .Values.images.busybox.tag }}"
+          imagePullPolicy: {{ .Values.images.busybox.pullPolicy | default "IfNotPresent" }}
+          command: ["sh", "-c", "mkdir -p /pvc/data /pvc/artifacts"]
+          volumeMounts:
+            - name: mlops-storage
+              mountPath: /pvc
+
+      containers:
+        - name: seed
+          image: "{{ .Values.images.ml.repository }}:{{ .Values.images.ml.tag }}"
+          imagePullPolicy: {{ .Values.images.ml.pullPolicy | default "IfNotPresent" }}
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -e
+              /app/scripts/generate_data.sh
+              /app/scripts/validate_data.sh
+              /app/scripts/prepare_data.sh
+              /app/scripts/build_features.sh
+              /app/scripts/build_labels.sh
+              /app/scripts/build_training_set.sh
+              /app/scripts/train_baseline.sh
+              /app/scripts/promote_model.sh
+          env:
+            - name: CHURN_MLOPS_CONFIG
+              value: /app/config/config.yaml
+          volumeMounts:
+            - name: mlops-storage
+              mountPath: /app/data
+              subPath: data
+            - name: mlops-storage
+              mountPath: /app/artifacts
+              subPath: artifacts
+            - name: config
+              mountPath: /app/config/config.yaml
+              subPath: config.yaml
+
+      volumes:
+        - name: config
+          configMap:
+            name: churn-mlops-config
+        - name: mlops-storage
+          persistentVolumeClaim:
+            claimName: churn-mlops-pvc
+{{- end }}

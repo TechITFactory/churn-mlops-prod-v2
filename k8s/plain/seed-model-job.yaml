@@ -19,28 +19,23 @@ spec:
 
       containers:
         - name: seed
-          image: techitfactory/churn-ml:0.1.2
-          imagePullPolicy: Always
-
+          image: techitfactory/churn-ml:0.1.4
+          imagePullPolicy: IfNotPresent
           env:
             - name: CHURN_MLOPS_CONFIG
               value: /app/config/config.yaml
-
           command: ["sh", "-c"]
           args:
             - |
               set -e
-              python -m churn_mlops.data.generate_synthetic
-              python -m churn_mlops.data.validate
-              python -m churn_mlops.data.prepare_dataset
-              python -m churn_mlops.features.build_features
-              python -m churn_mlops.training.build_labels
-              python -m churn_mlops.training.build_training_set
-              python -m churn_mlops.training.train_baseline
-
-              # Ensure production alias exists (simple, reliable)
-              LATEST_MODEL=$(ls -1 /app/artifacts/models/baseline_logreg_*.joblib | tail -n 1)
-              cp "$LATEST_MODEL" /app/artifacts/models/production_latest.joblib
+              ./scripts/generate_data.sh
+              ./scripts/validate_data.sh
+              ./scripts/prepare_data.sh
+              ./scripts/build_features.sh
+              ./scripts/build_labels.sh
+              ./scripts/build_training_set.sh
+              ./scripts/train_baseline.sh
+              ./scripts/promote_model.sh
 
           volumeMounts:
             - name: mlops-storage
@@ -54,9 +49,9 @@ spec:
               subPath: config.yaml
 
       volumes:
-        - name: config
-          configMap:
-            name: churn-mlops-config
         - name: mlops-storage
           persistentVolumeClaim:
             claimName: churn-mlops-pvc
+        - name: config
+          configMap:
+            name: churn-mlops-config

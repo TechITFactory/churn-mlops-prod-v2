@@ -1,137 +1,135 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, Field
 
 from churn_mlops.common.config import load_config
-from churn_mlops.common.logging import setup_logging
-
+from churn_mlops.monitoring.api_metrics import PREDICTION_COUNT, metrics_middleware
 
 app = FastAPI(title="TechITFactory Churn API", version="0.1.0")
 
+# -------------------------
+# Metrics middleware
+# -------------------------
+app.middleware("http")(metrics_middleware())
 
-@dataclass
-class ModelBundle:
-    model: Any
-    cat_cols: list[str]
-    num_cols: list[str]
-    raw: Dict[str, Any]
-
-
-class PredictRequest(BaseModel):
-    user_id: Optional[int] = Field(default=None)
-    features: Dict[str, Any] = Field(default_factory=dict)
-
-
-class PredictResponse(BaseModel):
-    user_id: Optional[int]
-    churn_risk: float
-    model_type: str
+# -------------------------
+# Config + paths
+# -------------------------
+CONFIG_PATH_ENV = "CHURN_MLOPS_CONFIG"
+_model = None
+_model_meta: Dict[str, Any] = {}
 
 
-_bundle: Optional[ModelBundle] = None
+def _get_config() -> Dict[str, Any]:
+    cfg_path = os.getenv(CONFIG_PATH_ENV)
+    if cfg_path:
+        return load_config(cfg_path)
+    return load_config()
 
 
-def _load_bundle() -> ModelBundle:
-    cfg = load_config()
-    models_dir = cfg["paths"]["models"]
+def _production_model_path(cfg: Dict[str, Any]) -> Path:
+    # Stable alias expected in prod
+    p = cfg["paths"]["models"]
+    return Path(p) / "production_latest.joblib"
 
-    prod_path = Path(models_dir) / "production_latest.joblib"
-    if not prod_path.exists():
+
+def _load_model_or_raise(cfg: Dict[str, Any]):
+    global _model, _model_meta
+    model_path = _production_model_path(cfg)
+    if not model_path.exists():
         raise FileNotFoundError(
-            f"Missing production model alias: {prod_path}. "
-            f"Run promote step first."
+            f"Missing production model alias: {model_path}. Run promote step (or seed job) first."
         )
-
-    blob = joblib.load(prod_path)
-
-    if isinstance(blob, dict) and "model" in blob:
-        model = blob["model"]
-        cat_cols = list(blob.get("cat_cols", []))
-        num_cols = list(blob.get("num_cols", []))
-        return ModelBundle(model=model, cat_cols=cat_cols, num_cols=num_cols, raw=blob)
-
-    return ModelBundle(model=blob, cat_cols=[], num_cols=[], raw={"model": blob})
-
-
-def _get_bundle() -> ModelBundle:
-    global _bundle
-    if _bundle is None:
-        _bundle = _load_bundle()
-    return _bundle
-
-
-def _align_features(features: Dict[str, Any], bundle: ModelBundle) -> pd.DataFrame:
-    if bundle.cat_cols or bundle.num_cols:
-        data = dict(features)
-
-        for c in bundle.cat_cols:
-            data.setdefault(c, None)
-        for c in bundle.num_cols:
-            data.setdefault(c, 0.0)
-
-        df = pd.DataFrame([data])
-
-        for c in bundle.cat_cols + bundle.num_cols:
-            if c not in df.columns:
-                df[c] = None if c in bundle.cat_cols else 0.0
-
-        return df
-
-    return pd.DataFrame([features])
+    _model = joblib.load(model_path)
+    _model_meta = {"model_path": str(model_path)}
 
 
 @app.on_event("startup")
-def startup():
-    cfg = load_config()
-    logger = setup_logging(cfg)
+def startup_event():
+    cfg = _get_config()
     try:
-        b = _get_bundle()
-        logger.info("API loaded production model successfully.")
-        logger.info("Captured cols: cat=%d num=%d", len(b.cat_cols), len(b.num_cols))
+        _load_model_or_raise(cfg)
     except Exception as e:
-        logger.error("Failed to load model on startup: %s", e)
+        # We don't crash the process here to allow /live
+        # but /ready should fail until model is present
+        _model_meta = {"startup_error": str(e)}
 
 
+# -------------------------
+# Schemas
+# -------------------------
+class PredictRequest(BaseModel):
+    user_id: str = Field(..., description="Unique user id")
+    snapshot_date: Optional[str] = Field(None, description="Optional ISO date")
+    features: Dict[str, float] = Field(..., description="Feature map for this user")
+
+
+class PredictResponse(BaseModel):
+    user_id: str
+    churn_risk: float
+    model_path: str
+
+
+# -------------------------
+# Health endpoints
+# -------------------------
 @app.get("/live")
 def live():
-    # Pure process health
-    return {"status": "ok"}
+    return {"status": "live"}
 
 
 @app.get("/ready")
 def ready():
-    # Readiness depends on model availability
+    cfg = _get_config()
     try:
-        _get_bundle()
-        return {"status": "ok"}
+        if _model is None:
+            _load_model_or_raise(cfg)
+        return {"status": "ready", "model": _model_meta.get("model_path")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/health")
 def health():
-    # Backward-compatible alias for readiness
+    # Backward compatible single health endpoint
     return ready()
 
 
+# -------------------------
+# Metrics endpoint
+# -------------------------
+@app.get("/metrics")
+def metrics():
+    data = generate_latest()
+    return Response(content=data, media_type=CONTENT_TYPE_LATEST)
+
+
+# -------------------------
+# Prediction
+# -------------------------
 @app.post("/predict", response_model=PredictResponse)
 def predict(req: PredictRequest):
+    cfg = _get_config()
     try:
-        bundle = _get_bundle()
-        X = _align_features(req.features, bundle)
-
-        if not hasattr(bundle.model, "predict_proba"):
-            raise ValueError("Loaded model does not support predict_proba")
-
-        proba = float(bundle.model.predict_proba(X)[:, 1][0])
-        return PredictResponse(user_id=req.user_id, churn_risk=proba, model_type="production_pipeline")
-
+        if _model is None:
+            _load_model_or_raise(cfg)
+        # Convert feature dict -> dataframe
+        x = pd.DataFrame([req.features])
+        proba = float(_model.predict_proba(x)[:, 1])
+        PREDICTION_COUNT.inc()
+        return PredictResponse(
+            user_id=req.user_id,
+            churn_risk=proba,
+            model_path=str(_production_model_path(cfg)),
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

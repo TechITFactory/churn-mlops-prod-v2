@@ -4,7 +4,7 @@ import json
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 from churn_mlops.common.config import load_config
 from churn_mlops.common.logging import get_logger, setup_logging

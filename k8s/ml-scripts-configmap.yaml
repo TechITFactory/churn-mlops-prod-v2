@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: churn-mlops-scripts
+  namespace: churn-mlops
+data:
+  ensure_latest_predictions.sh: |
+    #!/usr/bin/env sh
+    set -eu
+
+    PRED_DIR="/app/data/predictions"
+    LATEST_ALIAS="${PRED_DIR}/batch_predictions_latest.csv"
+
+    mkdir -p "${PRED_DIR}"
+
+    LATEST_FILE="$(ls -1t ${PRED_DIR}/churn_predictions_*.csv 2>/dev/null | head -n 1 || true)"
+
+    if [ -z "${LATEST_FILE}" ]; then
+      echo "❌ No churn_predictions_*.csv found in ${PRED_DIR}"
+      exit 1
+    fi
+
+    cp -f "${LATEST_FILE}" "${LATEST_ALIAS}"
+
+    echo "✅ Latest alias updated:"
+    echo "   ${LATEST_ALIAS} -> $(basename "${LATEST_FILE}")"
+
+  run_batch_score_and_proxy.sh: |
+    #!/usr/bin/env sh
+    set -eu
+
+    echo "🚀 Running batch scoring..."
+    ./scripts/batch_score.sh
+
+    echo "🧩 Updating latest predictions alias..."
+    sh /cm-scripts/ensure_latest_predictions.sh
+
+    echo "📊 Writing score proxy..."
+    python -m churn_mlops.monitoring.run_score_proxy
+
+    echo "✅ Batch + latest alias + proxy completed"

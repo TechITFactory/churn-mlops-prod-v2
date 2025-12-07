@@ -9,7 +9,6 @@ paths:
   processed: /app/data/processed
   features: /app/data/features
   predictions: /app/data/predictions
-
   artifacts: /app/artifacts
   models: /app/artifacts/models
   metrics: /app/artifacts/metrics

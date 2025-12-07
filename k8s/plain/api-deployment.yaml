@@ -18,19 +18,14 @@ spec:
       initContainers:
         - name: init-dirs
           image: busybox:1.36
-          command:
-            - sh
-            - -c
-            - |
-              mkdir -p /pvc/data /pvc/data/predictions
-              mkdir -p /pvc/artifacts /pvc/artifacts/models /pvc/artifacts/metrics
+          command: ["sh", "-c", "mkdir -p /pvc/data /pvc/artifacts"]
           volumeMounts:
             - name: mlops-storage
               mountPath: /pvc
 
       containers:
         - name: churn-api
-          image: techitfactory/churn-api:0.1.2
+          image: techitfactory/churn-api:0.1.4
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -38,17 +33,6 @@ spec:
           env:
             - name: CHURN_MLOPS_CONFIG
               value: /app/config/config.yaml
-
-          volumeMounts:
-            - name: mlops-storage
-              mountPath: /app/data
-              subPath: data
-            - name: mlops-storage
-              mountPath: /app/artifacts
-              subPath: artifacts
-            - name: config
-              mountPath: /app/config/config.yaml
-              subPath: config.yaml
 
           livenessProbe:
             httpGet:
@@ -66,11 +50,22 @@ spec:
 
           resources:
             requests:
-              cpu: "100m"
-              memory: "256Mi"
+              cpu: 100m
+              memory: 256Mi
             limits:
-              cpu: "500m"
-              memory: "512Mi"
+              cpu: 500m
+              memory: 512Mi
+
+          volumeMounts:
+            - name: mlops-storage
+              mountPath: /app/data
+              subPath: data
+            - name: mlops-storage
+              mountPath: /app/artifacts
+              subPath: artifacts
+            - name: config
+              mountPath: /app/config/config.yaml
+              subPath: config.yaml
 
       volumes:
         - name: mlops-storage

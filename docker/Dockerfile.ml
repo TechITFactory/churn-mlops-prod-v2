@@ -7,17 +7,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 COPY requirements ./requirements
-COPY pyproject.toml ./
-COPY README.md ./
-COPY config ./config
+COPY pyproject.toml README.md ./
 
 RUN pip install --no-cache-dir --upgrade pip \
- && pip install --no-cache-dir -r requirements/runtime.txt
+ && pip install --no-cache-dir -r requirements/base.txt \
+ && pip install --no-cache-dir -r requirements/dev.txt \
+ && pip install --no-cache-dir -r requirements/serving.txt || true
 
 COPY src ./src
+COPY config ./config
+
+# ✅ scripts must exist in ML image
+COPY scripts ./scripts
+RUN chmod +x ./scripts/*.sh
 
 RUN pip install --no-cache-dir .
 
 ENV CHURN_MLOPS_CONFIG=/app/config/config.yaml
 
-CMD ["python", "-c", "print('Use: python -m churn_mlops.training.train_baseline | train_candidate | promote_model | churn_mlops.inference.batch_score')"]
+CMD ["bash"]

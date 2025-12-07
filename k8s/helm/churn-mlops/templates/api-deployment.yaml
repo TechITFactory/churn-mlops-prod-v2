@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: churn-api
+  labels:
+    app: churn-api
+    {{- include "churn-mlops.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: churn-api
+  template:
+    metadata:
+      labels:
+        app: churn-api
+        {{- include "churn-mlops.labels" . | nindent 8 }}
+    spec:
+      initContainers:
+        - name: init-dirs
+          image: {{ include "churn-mlops.busyboxImage" . }}
+          command: ["sh", "-c", "mkdir -p /pvc/data /pvc/artifacts"]
+          volumeMounts:
+            - name: mlops-storage
+              mountPath: /pvc
+
+      containers:
+        - name: churn-api
+          image: {{ include "churn-mlops.apiImage" . }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.service.port }}
+
+          env:
+            - name: CHURN_MLOPS_CONFIG
+              value: /app/config/config.yaml
+
+          resources:
+            {{- toYaml .Values.resources.api | nindent 12 }}
+
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 20
+
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          volumeMounts:
+            - name: mlops-storage
+              mountPath: /app/data
+              subPath: data
+            - name: mlops-storage
+              mountPath: /app/artifacts
+              subPath: artifacts
+            - name: config
+              mountPath: /app/config/config.yaml
+              subPath: config.yaml
+
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Values.configMap.name }}
+        - name: mlops-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.pvc.name }}

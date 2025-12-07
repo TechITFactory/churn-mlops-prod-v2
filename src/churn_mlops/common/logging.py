@@ -1,34 +1,59 @@
+from __future__ import annotations
+
 import logging
-from pathlib import Path
-from typing import Any, Dict
+import sys
+from typing import Any, Dict, Optional
 
 
-def setup_logging(cfg: Dict[str, Any]) -> logging.Logger:
-    log_cfg = cfg.get("logging", {})
-    level = str(log_cfg.get("level", "INFO")).upper()
-    to_file = bool(log_cfg.get("to_file", False))
-    file_path = str(log_cfg.get("file_path", "logs/app.log"))
+DEFAULT_LOGGER_NAME = "churn-mlops"
 
-    logger = logging.getLogger("churn-mlops")
-    logger.setLevel(level)
-    logger.handlers.clear()
 
-    fmt = logging.Formatter(
-        fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+def get_logger(name: Optional[str] = None) -> logging.Logger:
+    """
+    Return a named logger. If no name provided, return default app logger.
+    """
+    return logging.getLogger(name or DEFAULT_LOGGER_NAME)
+
+
+def setup_logging(
+    cfg: Optional[Dict[str, Any]] = None,
+    name: Optional[str] = None,
+) -> logging.Logger:
+    """
+    Setup app-wide logging and return a logger.
+
+    Expected config shape (optional):
+      cfg["app"]["log_level"] = "INFO" | "DEBUG" | ...
+
+    This function returns a logger so caller code can do:
+      logger = setup_logging(cfg)
+      logger.info("...")
+    """
+    level_str = "INFO"
+    if cfg:
+        level_str = (
+            cfg.get("app", {}).get("log_level")
+            or cfg.get("app", {}).get("loglevel")
+            or "INFO"
+        )
+
+    level = getattr(logging, str(level_str).upper(), logging.INFO)
+
+    root = logging.getLogger()
+
+    # Remove existing handlers to prevent duplicate logs in tests/notebooks
+    if root.handlers:
+        for h in list(root.handlers):
+            root.removeHandler(h)
+
+    handler = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter(
+        "%(asctime)s | %(levelname)s | %(name)s | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    handler.setFormatter(formatter)
 
-    ch = logging.StreamHandler()
-    ch.setLevel(level)
-    ch.setFormatter(fmt)
-    logger.addHandler(ch)
+    root.addHandler(handler)
+    root.setLevel(level)
 
-    if to_file:
-        Path(file_path).parent.mkdir(parents=True, exist_ok=True)
-        fh = logging.FileHandler(file_path)
-        fh.setLevel(level)
-        fh.setFormatter(fmt)
-        logger.addHandler(fh)
-
-    logger.propagate = False
-    return logger
+    return get_logger(name)

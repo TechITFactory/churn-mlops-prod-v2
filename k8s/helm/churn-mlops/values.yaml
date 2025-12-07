@@ -1,0 +1,19 @@
+images:
+  api:
+    repository: techitfactory/churn-api
+    tag: ""
+    pullPolicy: IfNotPresent
+
+  ml:
+    repository: techitfactory/churn-ml
+    tag: ""
+    pullPolicy: IfNotPresent
+
+  busybox:
+    repository: busybox
+    tag: "1.36"
+    pullPolicy: IfNotPresent
+
+seedJob:
+  enabled: true
+  backoffLimit: 1

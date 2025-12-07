@@ -7,19 +7,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 COPY requirements ./requirements
-COPY pyproject.toml ./
-COPY README.md ./
+COPY pyproject.toml README.md ./
 COPY config ./config
-
-RUN pip install --no-cache-dir --upgrade pip \
- && pip install --no-cache-dir -r requirements/api.txt
-
 COPY src ./src
 
-RUN pip install --no-cache-dir .
-
-EXPOSE 8000
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir -r requirements/api.txt \
+ && pip install --no-cache-dir .
 
 ENV CHURN_MLOPS_CONFIG=/app/config/config.yaml
 
+EXPOSE 8000
 CMD ["uvicorn", "churn_mlops.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
