@@ -5,6 +5,13 @@ image:
   tag: "staging"
   pullPolicy: Always
 
+# Persistent Volume Claim configuration
+pvc:
+  name: churn-mlops-data-staging
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+
 api:
   replicaCount: 1
   

@@ -5,6 +5,13 @@ image:
   tag: "v1.0.0"  # Will be updated by CD pipeline
   pullPolicy: IfNotPresent
 
+# Persistent Volume Claim configuration
+pvc:
+  name: churn-mlops-data-prod
+  accessModes:
+    - ReadWriteOnce
+  size: 50Gi
+
 api:
   replicaCount: 3
   
