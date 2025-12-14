@@ -4,7 +4,6 @@ import logging
 import sys
 from typing import Any, Dict, Optional
 
-
 DEFAULT_LOGGER_NAME = "churn-mlops"
 
 
