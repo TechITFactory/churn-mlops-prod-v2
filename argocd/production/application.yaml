@@ -1,0 +1,57 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: churn-mlops-production
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: churn-mlops-alerts
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: churn-mlops-alerts
+    notifications.argoproj.io/subscribe.on-health-degraded.slack: churn-mlops-alerts
+spec:
+  project: production
+  
+  source:
+    repoURL: https://github.com/yourusername/churn-mlops-prod.git
+    targetRevision: main
+    path: k8s/helm/churn-mlops
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-production.yaml
+      parameters:
+        - name: image.tag
+          value: v1.0.0
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: churn-mlops-production
+  
+  syncPolicy:
+    automated:
+      prune: false  # Manual prune in production for safety
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 5m
+  
+  revisionHistoryLimit: 20
+  
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+      jsonPointers:
+        - /spec/replicas

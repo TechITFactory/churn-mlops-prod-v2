@@ -1,0 +1,72 @@
+# Staging environment values
+# Override default values for staging deployment
+
+image:
+  tag: "staging"
+  pullPolicy: Always
+
+api:
+  replicaCount: 1
+  
+  ingress:
+    enabled: true
+    hosts:
+      - host: churn-api-staging.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: churn-api-staging-tls
+        hosts:
+          - churn-api-staging.example.com
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  
+  autoscaling:
+    enabled: false
+  
+  env:
+    - name: CHURN_MLOPS_CONFIG
+      value: /app/config/config.yaml
+    - name: LOG_LEVEL
+      value: DEBUG
+    - name: ENVIRONMENT
+      value: staging
+
+ml:
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+# Less frequent jobs in staging
+batchScore:
+  enabled: true
+  schedule: "0 8 * * *"  # Daily at 8 AM
+
+retrain:
+  enabled: false  # Disable automatic retraining in staging
+
+driftMonitoring:
+  enabled: true
+  schedule: "0 9 * * *"  # Daily at 9 AM
+
+persistence:
+  size: 5Gi
+  volumes:
+    data:
+      size: 5Gi
+    artifacts:
+      size: 10Gi
+
+podDisruptionBudget:
+  enabled: false

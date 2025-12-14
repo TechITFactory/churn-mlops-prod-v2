@@ -1,6 +1,14 @@
 apiVersion: v2
 name: churn-mlops
-description: TechITFactory Churn MLOps stack (API + shared storage)
+description: A production-grade MLOps Helm chart for customer churn prediction
 type: application
-version: 0.1.0
+version: 1.0.0
 appVersion: "0.1.0"
+keywords:
+  - mlops
+  - machine-learning
+  - churn-prediction
+  - fastapi
+maintainers:
+  - name: TechITFactory
+    email: contact@techitfactory.com

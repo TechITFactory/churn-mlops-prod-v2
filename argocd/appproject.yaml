@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: production
+  namespace: argocd
+spec:
+  description: Production MLOps Project
+  
+  sourceRepos:
+    - https://github.com/yourusername/churn-mlops-prod.git
+  
+  destinations:
+    - namespace: churn-mlops-production
+      server: https://kubernetes.default.svc
+    - namespace: churn-mlops-staging
+      server: https://kubernetes.default.svc
+  
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: ''
+      kind: PersistentVolume
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRole
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRoleBinding
+  
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  
+  roles:
+    - name: admin
+      description: Admin privileges for production project
+      policies:
+        - p, proj:production:admin, applications, *, production/*, allow
+      groups:
+        - production-admins
+    
+    - name: developer
+      description: Developer access (read-only)
+      policies:
+        - p, proj:production:developer, applications, get, production/*, allow
+        - p, proj:production:developer, applications, sync, production/*, allow
+      groups:
+        - developers
+  
+  syncWindows:
+    - kind: deny
+      schedule: '0 22 * * *'
+      duration: 8h
+      applications:
+        - '*'
+      manualSync: true
+      timeZone: UTC
