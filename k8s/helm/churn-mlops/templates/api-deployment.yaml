@@ -27,7 +27,7 @@ spec:
       containers:
         - name: churn-api
           image: {{ include "churn-mlops.apiImage" . }}
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: {{ .Values.images.api.pullPolicy }}
           ports:
             - containerPort: {{ .Values.service.port }}
 
