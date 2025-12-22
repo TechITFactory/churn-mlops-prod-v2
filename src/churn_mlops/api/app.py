@@ -67,7 +67,9 @@ def startup_event():
 class PredictRequest(BaseModel):
     user_id: str = Field(..., description="Unique user id")
     snapshot_date: Optional[str] = Field(None, description="Optional ISO date")
-    features: Dict[str, float] = Field(..., description="Feature map for this user")
+    # Allow mixed types (categorical + numeric) because the training pipeline
+    # one-hot encodes categories and scales numerics under the hood.
+    features: Dict[str, Any] = Field(..., description="Feature map for this user")
 
 
 class PredictResponse(BaseModel):
@@ -130,3 +132,4 @@ def predict(req: PredictRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
