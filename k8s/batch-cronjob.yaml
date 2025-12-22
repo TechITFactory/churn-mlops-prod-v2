@@ -16,7 +16,6 @@ spec:
             runAsGroup: 0
             fsGroup: 0
           restartPolicy: Never
-
           initContainers:
             - name: init-dirs
               image: busybox:1.36
@@ -30,7 +29,6 @@ spec:
               volumeMounts:
                 - name: mlops-storage
                   mountPath: /pvc
-
           containers:
             - name: churn-batch
               image: techitfactory/churn-ml:dec22
@@ -40,36 +38,29 @@ spec:
                 runAsGroup: 0
                 allowPrivilegeEscalation: false
                 readOnlyRootFilesystem: false
-
               env:
                 - name: CHURN_MLOPS_CONFIG
                   value: /app/config/config.yaml
-
               volumeMounts:
                 - name: config
                   mountPath: /app/config/config.yaml
                   subPath: config.yaml
-
                 - name: mlops-storage
                   mountPath: /app/data
                   subPath: data
-
                 - name: mlops-storage
                   mountPath: /app/artifacts
                   subPath: artifacts
-
               command:
                 - /bin/sh
                 - -c
                 - |
                   set -e
                   python -m churn_mlops.inference.batch_score
-
           volumes:
             - name: config
               configMap:
                 name: churn-mlops-config
-
             - name: mlops-storage
               persistentVolumeClaim:
                 claimName: churn-mlops-pvc

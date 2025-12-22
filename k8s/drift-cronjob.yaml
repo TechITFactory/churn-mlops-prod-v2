@@ -4,7 +4,7 @@ metadata:
   name: churn-drift-daily
   namespace: churn-mlops
 spec:
-  schedule: "0 1 * * *"  # daily 01:00
+  schedule: "0 1 * * *" # daily 01:00
   successfulJobsHistoryLimit: 2
   failedJobsHistoryLimit: 2
   jobTemplate:
@@ -16,7 +16,6 @@ spec:
             runAsGroup: 0
             fsGroup: 0
           restartPolicy: Never
-
           containers:
             - name: drift
               image: techitfactory/churn-ml:dec22
@@ -29,7 +28,6 @@ spec:
                 - |
                   set -e
                   python -m churn_mlops.monitoring.run_drift_check
-
               volumeMounts:
                 - name: mlops-storage
                   mountPath: /app/data
@@ -40,7 +38,6 @@ spec:
                 - name: config
                   mountPath: /app/config/config.yaml
                   subPath: config.yaml
-
           volumes:
             - name: config
               configMap:

@@ -27,17 +27,15 @@ spec:
           volumeMounts:
             - name: mlops-storage
               mountPath: /pvc
-
       containers:
         - name: churn-api
-          image: techitfactory/churn-api:dec22
+          image: 'techitfactory/churn-api:'
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
           env:
             - name: CHURN_MLOPS_CONFIG
               value: /app/config/config.yaml
-
           volumeMounts:
             - name: mlops-storage
               mountPath: /app/data
@@ -48,14 +46,12 @@ spec:
             - name: config
               mountPath: /app/config/config.yaml
               subPath: config.yaml
-
           livenessProbe:
             httpGet:
               path: /live
               port: 8000
             initialDelaySeconds: 10
             periodSeconds: 20
-
           readinessProbe:
             httpGet:
               path: /ready
@@ -69,7 +65,6 @@ spec:
             limits:
               cpu: "500m"
               memory: "512Mi"
-
       volumes:
         - name: mlops-storage
           persistentVolumeClaim:

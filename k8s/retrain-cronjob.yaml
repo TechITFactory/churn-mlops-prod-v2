@@ -4,7 +4,7 @@ metadata:
   name: churn-retrain-weekly
   namespace: churn-mlops
 spec:
-  schedule: "0 3 * * 0"  # Sundays 03:00
+  schedule: "0 3 * * 0" # Sundays 03:00
   successfulJobsHistoryLimit: 2
   failedJobsHistoryLimit: 2
   jobTemplate:
@@ -17,7 +17,6 @@ spec:
             runAsGroup: 0
             fsGroup: 0
           restartPolicy: Never
-
           initContainers:
             - name: init-dirs
               image: busybox:1.36
@@ -25,7 +24,6 @@ spec:
               volumeMounts:
                 - name: mlops-storage
                   mountPath: /pvc
-
           containers:
             - name: retrain
               image: techitfactory/churn-ml:dec22
@@ -48,7 +46,6 @@ spec:
                   LATEST_MODEL=$(ls -1 /app/artifacts/models/baseline_logreg_*.joblib | tail -n 1)
                   echo "Promoting: $LATEST_MODEL"
                   cp "$LATEST_MODEL" /app/artifacts/models/production_latest.joblib
-
               volumeMounts:
                 - name: mlops-storage
                   mountPath: /app/data
@@ -59,7 +56,6 @@ spec:
                 - name: config
                   mountPath: /app/config/config.yaml
                   subPath: config.yaml
-
           volumes:
             - name: config
               configMap:
