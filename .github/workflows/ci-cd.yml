@@ -43,15 +43,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Docker meta (tags)
-        id: meta
+      - name: Docker meta (tags) churn-ml
+        id: meta_ml
         uses: docker/metadata-action@v5
+        env:
+          DOCKER_METADATA_SHORT_SHA_LENGTH: 7
         with:
-          images: |
-            techitfactory/churn-ml
-            techitfactory/churn-api
+          images: techitfactory/churn-ml
           tags: |
-            type=sha
+            type=sha,format=short,prefix=sha-
+            type=ref,event=branch
+            type=ref,event=tag
+          flavor: |
+            latest=false
+
+      - name: Docker meta (tags) churn-api
+        id: meta_api
+        uses: docker/metadata-action@v5
+        env:
+          DOCKER_METADATA_SHORT_SHA_LENGTH: 7
+        with:
+          images: techitfactory/churn-api
+          tags: |
+            type=sha,format=short,prefix=sha-
             type=ref,event=branch
             type=ref,event=tag
           flavor: |
@@ -75,7 +89,7 @@ jobs:
           context: .
           file: docker/Dockerfile.ml
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta_ml.outputs.tags }}
 
       - name: Build and push churn-api
         uses: docker/build-push-action@v5
@@ -83,7 +97,7 @@ jobs:
           context: .
           file: docker/Dockerfile.api
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta_api.outputs.tags }}
 
       # Auto-bump manifests to the new image tag and push to main so Argo syncs
       - name: Install yq
@@ -95,12 +109,12 @@ jobs:
       - name: Bump k8s manifests to new tag
         if: github.ref == 'refs/heads/main'
         env:
-          TAG: ${{ steps.meta.outputs.version }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           if [ -z "$GH_TOKEN" ]; then
             echo "GH_TOKEN not set; skipping manifest bump" && exit 0
           fi
+          TAG="sha-${GITHUB_SHA::7}"
           echo "Using GH_TOKEN to push manifests (repo: Dhananjaiah/churn-mlops-prod) with tag $TAG"
           git config user.name "gha-bot"
           git config user.email "gha-bot@users.noreply.github.com"
