@@ -7,9 +7,11 @@ spec:
   description: Production MLOps Project
   
   sourceRepos:
-    - https://github.com/yourusername/churn-mlops-prod.git
+    - https://github.com/techitfactory/churn-mlops-prod.git
   
   destinations:
+    - namespace: churn-mlops
+      server: https://kubernetes.default.svc
     - namespace: churn-mlops-production
       server: https://kubernetes.default.svc
     - namespace: churn-mlops-staging
