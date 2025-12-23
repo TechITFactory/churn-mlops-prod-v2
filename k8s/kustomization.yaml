@@ -1,11 +1,11 @@
 resources:
-  - plain/namespace.yaml
-  - plain/pvc.yaml
-  - plain/configmap.yaml
-  - plain/api-deployment.yaml
-  - plain/api-service.yaml
-  - plain/batch-score-proxy-cronjob.yaml
-  - plain/seed-model-job.yaml
+  - namespace.yaml
+  - pvc.yaml
+  - configmap.yaml
+  - api-deployment.yaml
+  - api-service.yaml
   - batch-cronjob.yaml
   - drift-cronjob.yaml
   - retrain-cronjob.yaml
+  - batch-score-proxy-cronjob.yaml
+  - seed-model-job.yaml
