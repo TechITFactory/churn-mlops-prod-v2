@@ -303,7 +303,7 @@ def parse_args() -> GeneratorSettings:
     parser = argparse.ArgumentParser(description="Generate synthetic e-learning churn dataset")
     parser.add_argument("--n-users", type=int, default=2000)
     parser.add_argument("--days", type=int, default=120)
-    parser.add_argument("--start-date", type=str, default="2025-01-01")
+    parser.add_argument("--start-date", type=str, default="2026-01-01")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--paid-ratio", type=float, default=0.35)
     parser.add_argument("--churn-base-rate", type=float, default=0.35)
