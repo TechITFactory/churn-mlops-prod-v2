@@ -115,10 +115,10 @@ jobs:
             echo "GH_TOKEN not set; skipping manifest bump" && exit 0
           fi
           TAG="sha-${GITHUB_SHA::7}"
-          echo "Using GH_TOKEN to push manifests (repo: techitfactoryjaiah/churn-mlops-prod) with tag $TAG"
+          echo "Using GH_TOKEN to push manifests (repo: techitfactory/churn-mlops-prod) with tag $TAG"
           git config user.name "gha-bot"
           git config user.email "gha-bot@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/techitfactoryjaiah/churn-mlops-prod.git
+          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/techitfactory/churn-mlops-prod.git
           yq -i '(.spec.template.spec.containers[] | select(.name=="churn-api").image) = "techitfactory/churn-api:'"$TAG"'"' k8s/api-deployment.yaml
           yq -i '(.spec.jobTemplate.spec.template.spec.containers[] | select(.name=="churn-batch").image) = "techitfactory/churn-ml:'"$TAG"'"' k8s/batch-cronjob.yaml
           yq -i '(.spec.jobTemplate.spec.template.spec.containers[] | select(.name=="drift").image) = "techitfactory/churn-ml:'"$TAG"'"' k8s/drift-cronjob.yaml
