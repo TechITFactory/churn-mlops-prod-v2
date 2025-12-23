@@ -31,7 +31,7 @@ spec:
                   mountPath: /pvc
           containers:
             - name: churn-batch
-              image: techitfactory/churn-ml:sha-9bbddcf
+              image: techitfactory/churn-ml:sha-f6b41a4
               imagePullPolicy: IfNotPresent
               securityContext:
                 runAsUser: 0
