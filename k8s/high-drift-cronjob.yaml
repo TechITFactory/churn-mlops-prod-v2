@@ -1,0 +1,102 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: churn-high-drift
+  namespace: churn-mlops
+spec:
+  # This job is meant for demo/showcase.
+  # You will typically trigger it manually via:
+  # kubectl create job -n churn-mlops --from=cronjob/churn-high-drift churn-high-drift-manual
+  schedule: "30 1 * * *" # daily 01:30 (safe default; demo usually manual)
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            fsGroup: 0
+          restartPolicy: Never
+          containers:
+            - name: high-drift
+              image: techitfactory/churn-ml:sha-d62341e
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: CHURN_MLOPS_CONFIG
+                  value: /app/config/config.yaml
+              command: ["sh", "-c"]
+              args:
+                - |
+                  set -e
+
+                  # 1) Force a big distribution shift in CURRENT features
+                  python - <<'PY'
+                  from pathlib import Path
+                  import numpy as np
+                  import pandas as pd
+
+                  features_path = Path("/app/data/features/user_features_daily.csv")
+                  if not features_path.exists():
+                      raise SystemExit(f"Missing {features_path}. Run seed/features pipeline first.")
+
+                  df = pd.read_csv(features_path)
+
+                  # Only touch columns used by drift check
+                  cols = [
+                      "sessions_7d",
+                      "watch_minutes_7d",
+                      "watch_minutes_14d",
+                      "watch_minutes_30d",
+                      "quiz_attempts_7d",
+                      "quiz_avg_score_7d",
+                  ]
+
+                  rng = np.random.default_rng(7)
+
+                  def shift_nonneg(col: str, mul: float, add: float, jitter: float) -> None:
+                      if col not in df.columns:
+                          return
+                      x = pd.to_numeric(df[col], errors="coerce").fillna(0.0).astype(float)
+                      y = x * mul + add + rng.normal(0.0, jitter, size=len(x))
+                      df[col] = np.clip(y, 0.0, None)
+
+                  # Strength tuned to usually push PSI > 0.25
+                  shift_nonneg("sessions_7d", mul=3.5, add=12.0, jitter=2.0)
+                  shift_nonneg("watch_minutes_7d", mul=6.0, add=250.0, jitter=50.0)
+                  shift_nonneg("watch_minutes_14d", mul=6.5, add=500.0, jitter=80.0)
+                  shift_nonneg("watch_minutes_30d", mul=7.0, add=900.0, jitter=120.0)
+                  shift_nonneg("quiz_attempts_7d", mul=4.0, add=8.0, jitter=1.5)
+
+                  # quiz score shifts downward; keep within 0..100
+                  if "quiz_avg_score_7d" in df.columns:
+                      q = pd.to_numeric(df["quiz_avg_score_7d"], errors="coerce")
+                      m = q.notna()
+                      q2 = (q[m].astype(float) - 35.0 + rng.normal(0.0, 10.0, size=int(m.sum()))).clip(0.0, 100.0)
+                      df.loc[m, "quiz_avg_score_7d"] = q2
+
+                  df.to_csv(features_path, index=False)
+                  print(f"Wrote HIGH-DRIFT features -> {features_path}")
+                  print("Touched columns:", [c for c in cols if c in df.columns])
+                  PY
+
+                  # 2) Run drift check (exits non-zero on FAIL)
+                  python -m churn_mlops.monitoring.run_drift_check
+              volumeMounts:
+                - name: mlops-storage
+                  mountPath: /app/data
+                  subPath: data
+                - name: mlops-storage
+                  mountPath: /app/artifacts
+                  subPath: artifacts
+                - name: config
+                  mountPath: /app/config/config.yaml
+                  subPath: config.yaml
+          volumes:
+            - name: config
+              configMap:
+                name: churn-mlops-config
+            - name: mlops-storage
+              persistentVolumeClaim:
+                claimName: churn-mlops-pvc
