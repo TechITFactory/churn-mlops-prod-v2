@@ -4,3 +4,8 @@ resources:
   - plain/configmap.yaml
   - plain/api-deployment.yaml
   - plain/api-service.yaml
+  - plain/batch-score-proxy-cronjob.yaml
+  - plain/seed-model-job.yaml
+  - batch-cronjob.yaml
+  - drift-cronjob.yaml
+  - retrain-cronjob.yaml
