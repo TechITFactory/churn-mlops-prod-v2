@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow
+  labels:
+    app: mlflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow
+  template:
+    metadata:
+      labels:
+        app: mlflow
+    spec:
+      serviceAccountName: mlflow-sa # create/bind IRSA if using AWS roles
+      containers:
+        - name: mlflow
+          image: ghcr.io/mlflow/mlflow:v2.9.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: mlflow-config
+            - secretRef:
+                name: mlflow-secret
+          args:
+            - mlflow
+            - server
+            - --backend-store-uri
+            - $(MLFLOW_BACKEND_STORE_URI)
+            - --default-artifact-root
+            - $(MLFLOW_DEFAULT_ARTIFACT_ROOT)
+            - --host
+            - $(MLFLOW_HOST)
+            - --port
+            - $(MLFLOW_PORT)
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 20
+            periodSeconds: 20

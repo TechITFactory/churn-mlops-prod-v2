@@ -1,0 +1,8 @@
+['core']
+\tremote = s3
+\tchecksums = md5
+
+['remote "s3"']
+\turl = s3://REPLACE-ME-YOUR-BUCKET/churn-mlops-prod-v2
+\tregion = us-east-1
+\tprofile = default

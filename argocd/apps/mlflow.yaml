@@ -1,18 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: churn-mlops-root
+  name: mlflow
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/techitfactory/churn-mlops-prod-v2.git
     targetRevision: main
-    path: argocd/apps
+    path: k8s/mlflow
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: churn-mlops
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

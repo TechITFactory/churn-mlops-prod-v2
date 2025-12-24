@@ -14,5 +14,6 @@ resources:
   - retrain-cronjob.yaml
   - batch-score-proxy-cronjob.yaml
   - seed-model-job.yaml
+  - mlflow
   # - monitoring/servicemonitor.yaml
   # - monitoring/prometheus-rules.yaml

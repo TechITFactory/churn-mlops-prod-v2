@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/techitfactory/churn-mlops-prod.git
+    repoURL: https://github.com/techitfactory/churn-mlops-prod-v2.git
     targetRevision: main
     path: k8s
   destination:

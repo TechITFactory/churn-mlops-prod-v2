@@ -13,7 +13,7 @@ spec:
   project: production
   
   source:
-    repoURL: https://github.com/yourusername/churn-mlops-prod.git
+    repoURL: https://github.com/techitfactory/churn-mlops-prod-v2.git
     targetRevision: main
     path: k8s/helm/churn-mlops
     helm:

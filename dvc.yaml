@@ -1,0 +1,55 @@
+stages:
+  generate_data:
+    cmd: ./scripts/generate_data.sh
+    outs:
+      - data/raw
+
+  validate_data:
+    cmd: ./scripts/validate_data.sh
+    deps:
+      - data/raw
+
+  prepare_data:
+    cmd: ./scripts/prepare_data.sh
+    deps:
+      - data/raw
+    outs:
+      - data/processed
+
+  build_features:
+    cmd: ./scripts/build_features.sh
+    deps:
+      - data/processed
+    outs:
+      - data/features
+
+  build_labels:
+    cmd: ./scripts/build_labels.sh
+    deps:
+      - data/processed
+    outs:
+      - data/processed/labels_daily.csv
+
+  build_training_set:
+    cmd: ./scripts/build_training_set.sh
+    deps:
+      - data/features
+      - data/processed/labels_daily.csv
+    outs:
+      - data/features/training_dataset.csv
+
+  train_baseline:
+    cmd: ./scripts/train_baseline.sh
+    deps:
+      - data/features/training_dataset.csv
+    outs:
+      - artifacts/models
+      - artifacts/metrics
+
+  batch_score:
+    cmd: ./scripts/batch_score_latest.sh
+    deps:
+      - data/features/user_features_daily.csv
+      - artifacts/models/production_latest.joblib
+    outs:
+      - data/predictions

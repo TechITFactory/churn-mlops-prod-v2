@@ -17,6 +17,9 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+.dvc/cache/
+.dvc/tmp/
+mlruns/
 
 # Logs
 logs/
