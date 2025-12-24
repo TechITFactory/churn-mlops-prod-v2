@@ -130,6 +130,56 @@ module "ebs_csi_irsa" {
   }
 }
 
+#########################
+# IRSA for MLflow S3 access
+#########################
+locals {
+  oidc_provider_url = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
+}
+
+resource "aws_iam_role" "mlflow_irsa" {
+  name = "${var.cluster_name}-mlflow-s3"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Federated = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_provider_url}"
+        }
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          StringEquals = {
+            "${local.oidc_provider_url}:sub" = "system:serviceaccount:churn-mlops:mlflow-sa"
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "mlflow_s3" {
+  name = "${var.cluster_name}-mlflow-s3-policy"
+  role = aws_iam_role.mlflow_irsa.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
+        Resource = "arn:aws:s3:::${aws_s3_bucket.artifacts.bucket}"
+      },
+      {
+        Effect = "Allow"
+        Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+        Resource = "arn:aws:s3:::${aws_s3_bucket.artifacts.bucket}/*"
+      }
+    ]
+  })
+}
+
 output "cluster_name" {
   value = module.eks.cluster_name
 }
