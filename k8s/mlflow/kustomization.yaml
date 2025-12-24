@@ -5,6 +5,7 @@ namespace: churn-mlops
 resources:
   - configmap.yaml
   - secret-example.yaml
+  - pvc.yaml
   - serviceaccount.yaml
   - deployment.yaml
   - service.yaml

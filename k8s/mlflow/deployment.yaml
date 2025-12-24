@@ -37,6 +37,9 @@ spec:
             - $(MLFLOW_HOST)
             - --port
             - $(MLFLOW_PORT)
+          volumeMounts:
+            - name: mlflow-data
+              mountPath: /mlflow
           readinessProbe:
             httpGet:
               path: /
@@ -49,3 +52,7 @@ spec:
               port: 5000
             initialDelaySeconds: 20
             periodSeconds: 20
+      volumes:
+        - name: mlflow-data
+          persistentVolumeClaim:
+            claimName: mlflow-pvc
