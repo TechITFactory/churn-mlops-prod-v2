@@ -87,12 +87,12 @@ stages:
     outs:
     - path: artifacts/metrics
       hash: md5
-      md5: dcfaf4d95a850b5079fa28ad486c240f.dir
+      md5: a94b19d6aa1681b2d143811f94332953.dir
       size: 3422
       nfiles: 2
     - path: artifacts/models
       hash: md5
-      md5: 5ca2c4f6a51fa7230843b1ac41c4d8d2.dir
+      md5: 1bcfbb97cd2d16b63a70262802704e95.dir
       size: 18282
       nfiles: 2
   batch_score:

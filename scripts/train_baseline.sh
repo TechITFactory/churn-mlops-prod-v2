@@ -34,7 +34,11 @@ if [ "${CHURN_MLOPS_CONFIG:-}" != "" ] && [ -f "${CHURN_MLOPS_CONFIG}" ]; then
 fi
 
 TMP_CFG=""
-cleanup() { [ -n "${TMP_CFG}" ] && rm -f "${TMP_CFG}"; }
+cleanup() {
+  if [ -n "${TMP_CFG}" ]; then
+    rm -f "${TMP_CFG}" || true
+  fi
+}
 trap cleanup EXIT
 
 # Prefer container if artifacts path exists and is writable

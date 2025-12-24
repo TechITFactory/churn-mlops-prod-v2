@@ -12,6 +12,7 @@ spec:
       backoffLimit: 1
       template:
         spec:
+          serviceAccountName: mlflow-sa
           securityContext:
             runAsUser: 0
             runAsGroup: 0
@@ -35,21 +36,18 @@ spec:
                   value: http://mlflow.churn-mlops.svc.cluster.local:5000
                 - name: MLFLOW_S3_ENDPOINT_URL
                   value: ""
+                - name: MLFLOW_EXPERIMENT_NAME
+                  value: churn
               command: ["sh", "-c"]
               args:
                 - |
                   set -e
-                  python -m churn_mlops.data.generate_synthetic
-                  python -m churn_mlops.data.validate
-                  python -m churn_mlops.data.prepare_dataset
-                  python -m churn_mlops.features.build_features
-                  python -m churn_mlops.training.build_labels
-                  python -m churn_mlops.training.build_training_set
-                  python -m churn_mlops.training.train_baseline
 
-                  LATEST_MODEL=$(ls -1 /app/artifacts/models/baseline_logreg_*.joblib | tail -n 1)
-                  echo "Promoting: $LATEST_MODEL"
-                  cp "$LATEST_MODEL" /app/artifacts/models/production_latest.joblib
+                  # 1) Run the full pipeline reproducibly
+                  dvc repro
+
+                  # 2) Persist outputs to DVC remote (S3/MinIO/etc)
+                  dvc push
               volumeMounts:
                 - name: mlops-storage
                   mountPath: /app/data

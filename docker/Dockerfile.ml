@@ -18,6 +18,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
     -r requirements/base.txt \
     -r requirements/dev.txt && \
+        if [ -f requirements/mlops.txt ]; then \
+            pip install --no-cache-dir -r requirements/mlops.txt; \
+        fi && \
     if [ -f requirements/serving.txt ]; then \
       pip install --no-cache-dir -r requirements/serving.txt; \
     fi
@@ -42,6 +45,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY src ./src
 COPY config ./config
 COPY scripts ./scripts
+COPY dvc.yaml dvc.lock ./.dvc/ ./
 COPY pyproject.toml README.md ./
 
 # Make scripts executable

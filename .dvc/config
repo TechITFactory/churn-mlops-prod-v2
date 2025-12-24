@@ -3,4 +3,3 @@
 ['remote "s3"']
     url = s3://tif-mlops-bucket01/churn-mlops-prod-v2
     region = us-east-1
-    profile = default

@@ -118,6 +118,14 @@ Shell wrappers for common operations (all use `set -e` for fail-fast).
 | `requirements/runtime.txt` | Alias for base.txt |
 | `requirements/api.txt` | API deps (fastapi, uvicorn, prometheus_client, pydantic) |
 | `requirements/serving.txt` | Serving deps (api.txt + joblib) |
+
+---
+
+## Course Notes Additions
+
+| File | Purpose |
+|------|---------|
+| `course-notes/section-16-enhancements-improvements.md` | Explains DVC/MLflow/KServe/Kubeflow purpose and how they fit your system |
 | `requirements/dev.txt` | Dev tools (pytest, ruff, black, pytest-cov) |
 
 ---

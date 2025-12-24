@@ -291,6 +291,14 @@ def main():
         if mlflow is None or not hasattr(mlflow, "start_run"):
             raise RuntimeError("mlflow is not installed or importable")
 
+        exp_name = cfg.get("mlflow", {}).get("experiment") or "churn"
+        exp_name = str(exp_name)
+        env_exp = __import__("os").environ.get("MLFLOW_EXPERIMENT_NAME")
+        if env_exp:
+            exp_name = env_exp
+        if exp_name:
+            mlflow.set_experiment(exp_name)
+
         with mlflow.start_run(run_name="baseline_logreg"):
             mlflow.log_params(
                 {
