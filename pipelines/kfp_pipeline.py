@@ -12,7 +12,7 @@ Usage:
 Then upload churn_pipeline.yaml to the KFP UI.
 """
 
-from kfp import Client, compiler, dsl
+from kfp import compiler, dsl
 
 
 # Update these defaults for your ECR repo and bucket
