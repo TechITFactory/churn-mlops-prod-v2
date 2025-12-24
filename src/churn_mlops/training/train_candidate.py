@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Tuple
 import joblib
 import numpy as np
 import pandas as pd
+import mlflow
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.impute import SimpleImputer
@@ -227,6 +228,30 @@ def main():
 
     logger.info("Training candidate model with time-aware split...")
     model_path, metrics_path, meta = train_candidate(settings)
+
+    try:
+        with mlflow.start_run(run_name="candidate_hgb"):
+            mlflow.log_params(
+                {
+                    "features_dir": settings.features_dir,
+                    "models_dir": settings.models_dir,
+                    "metrics_dir": settings.metrics_dir,
+                    "test_size": settings.test_size,
+                    "random_state": settings.random_state,
+                }
+            )
+            mlflow.log_metrics(
+                {
+                    "pr_auc": meta["metrics"]["pr_auc"],
+                    "roc_auc": meta["metrics"]["roc_auc"],
+                    "churn_rate_train": meta["churn_rate_train"],
+                    "churn_rate_test": meta["churn_rate_test"],
+                }
+            )
+            mlflow.log_artifact(metrics_path)
+            mlflow.log_artifact(model_path)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("MLflow logging skipped: %s", exc)
 
     logger.info("Model saved ✅ -> %s", model_path)
     logger.info("Metrics saved ✅ -> %s", metrics_path)

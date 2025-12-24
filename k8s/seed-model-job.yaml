@@ -35,6 +35,10 @@ spec:
           env:
             - name: CHURN_MLOPS_CONFIG
               value: /app/config/config.yaml
+            - name: MLFLOW_TRACKING_URI
+              value: http://mlflow.churn-mlops.svc.cluster.local:5000
+            - name: MLFLOW_S3_ENDPOINT_URL
+              value: ""
 
           command: ["sh", "-c"]
           args:
