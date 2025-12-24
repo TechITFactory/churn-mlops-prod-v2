@@ -12,6 +12,37 @@ provider "aws" {
   region = var.aws_region
 }
 
+#########################
+# S3 artifacts bucket
+#########################
+resource "aws_s3_bucket" "artifacts" {
+  bucket        = var.artifacts_bucket_name
+  force_destroy = true
+
+  tags = {
+    Name    = "${var.cluster_name}-artifacts"
+    Project = var.cluster_name
+  }
+}
+
+resource "aws_s3_bucket_versioning" "artifacts" {
+  bucket = aws_s3_bucket.artifacts.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "artifacts" {
+  bucket = aws_s3_bucket.artifacts.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.1.2"
