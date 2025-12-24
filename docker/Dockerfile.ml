@@ -45,7 +45,8 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY src ./src
 COPY config ./config
 COPY scripts ./scripts
-COPY dvc.yaml dvc.lock ./.dvc/ ./
+COPY dvc.yaml dvc.lock ./
+COPY .dvc ./.dvc
 COPY pyproject.toml README.md ./
 
 # Make scripts executable
