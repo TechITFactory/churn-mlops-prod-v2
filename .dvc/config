@@ -1,8 +1,6 @@
-['core']
-\tremote = s3
-\tchecksums = md5
-
+[core]
+    remote = s3
 ['remote "s3"']
-\turl = s3://REPLACE-ME-YOUR-BUCKET/churn-mlops-prod-v2
-\tregion = us-east-1
-\tprofile = default
+    url = s3://tif-mlops-bucket01/churn-mlops-prod-v2
+    region = us-east-1
+    profile = default

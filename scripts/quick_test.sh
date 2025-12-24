@@ -53,7 +53,7 @@ main() {
     print_header "1. Testing Prerequisites"
     
     print_test "Python version"
-    if python --version | grep -q "3.1"; then
+    if python3 --version | grep -q "3.1"; then
         print_success "Python 3.10+ found"
     else
         print_error "Python 3.10+ not found"
@@ -85,7 +85,7 @@ main() {
     
     print_test "Creating virtual environment"
     if [ ! -d ".venv" ]; then
-        python -m venv .venv
+        python3 -m venv .venv
         print_success "Virtual environment created"
     else
         print_info "Virtual environment already exists"

@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Tuple
 import joblib
 import numpy as np
 import pandas as pd
-import mlflow
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.impute import SimpleImputer
@@ -25,6 +24,32 @@ from sklearn.preprocessing import OneHotEncoder
 from churn_mlops.common.config import load_config
 from churn_mlops.common.logging import setup_logging
 from churn_mlops.common.utils import ensure_dir
+
+
+def _safe_import_mlflow():
+    """Import the real MLflow package if installed.
+
+    This repo contains a top-level `mlflow/` directory which can shadow the PyPI
+    `mlflow` package when running from repo root.
+    """
+
+    try:
+        import importlib
+        import os
+        import sys
+
+        original_sys_path = list(sys.path)
+        cwd = os.getcwd()
+        sys.path = [p for p in sys.path if p not in ("", ".", cwd)]
+        mlflow = importlib.import_module("mlflow")
+        sys.path = original_sys_path
+        return mlflow
+    except Exception:
+        try:
+            sys.path = original_sys_path
+        except Exception:
+            pass
+        return None
 
 
 @dataclass
@@ -230,6 +255,10 @@ def main():
     model_path, metrics_path, meta = train_candidate(settings)
 
     try:
+        mlflow = _safe_import_mlflow()
+        if mlflow is None or not hasattr(mlflow, "start_run"):
+            raise RuntimeError("mlflow is not installed or importable")
+
         with mlflow.start_run(run_name="candidate_hgb"):
             mlflow.log_params(
                 {

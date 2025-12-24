@@ -17,9 +17,10 @@ help:
 	@echo "  all           - full local run"
 
 setup:
-	pip install -r requirements/dev.txt
-	@if [ -f requirements/api.txt ]; then pip install -r requirements/api.txt; fi
-	pip install -e .
+	python3 -m pip install -U pip setuptools wheel
+	python3 -m pip install -r requirements/dev.txt
+	@if [ -f requirements/api.txt ]; then python3 -m pip install -r requirements/api.txt; fi
+	python3 -m pip install -e .
 
 lint:
 	ruff check .

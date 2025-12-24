@@ -2,3 +2,5 @@ config.local
 tmp/
 cache/
 updater/
+/tmp
+/cache

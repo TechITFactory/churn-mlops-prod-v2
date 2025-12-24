@@ -32,11 +32,19 @@ data/features/*
 data/predictions/*
 !data/**/.gitkeep
 
+# DVC tracks data/raw as a pipeline output; keep it out of Git
+data/raw/.gitkeep
+
 # Artifacts
 artifacts/models/*
 artifacts/metrics/*
 artifacts/reports/*
 !artifacts/**/.gitkeep
+
+# DVC tracks these as pipeline outputs; keep their .gitkeep out of Git
+artifacts/models/.gitkeep
+artifacts/metrics/.gitkeep
+data/predictions/.gitkeep
 
 # Env files
 .env

@@ -1,5 +1,6 @@
 import argparse
 import json
+import shutil
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -8,7 +9,6 @@ from typing import Any, Dict, List, Tuple
 import joblib
 import numpy as np
 import pandas as pd
-import mlflow
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
@@ -25,6 +25,33 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from churn_mlops.common.config import load_config
 from churn_mlops.common.logging import setup_logging
 from churn_mlops.common.utils import ensure_dir
+
+
+def _safe_import_mlflow():
+    """Import the real MLflow package if installed.
+
+    This repo contains a top-level `mlflow/` directory (manifests/config), which can
+    shadow the PyPI `mlflow` package when running from repo root. We temporarily remove
+    the current working directory from sys.path during import.
+    """
+
+    try:
+        import importlib
+        import os
+        import sys
+
+        original_sys_path = list(sys.path)
+        cwd = os.getcwd()
+        sys.path = [p for p in sys.path if p not in ("", ".", cwd)]
+        mlflow = importlib.import_module("mlflow")
+        sys.path = original_sys_path
+        return mlflow
+    except Exception:
+        try:
+            sys.path = original_sys_path
+        except Exception:
+            pass
+        return None
 
 
 @dataclass
@@ -248,8 +275,22 @@ def main():
     logger.info("Training baseline model with time-aware split...")
     model_path, metrics_path, meta = train_baseline(settings)
 
+    # Create stable aliases expected by batch scoring / serving.
+    try:
+        prod_model_path = Path(settings.models_dir) / "production_latest.joblib"
+        prod_metrics_path = Path(settings.metrics_dir) / "production_latest.json"
+        shutil.copy2(model_path, prod_model_path)
+        shutil.copy2(metrics_path, prod_metrics_path)
+        logger.info("Production aliases updated ✅ -> %s", prod_model_path)
+    except Exception as e:
+        logger.warning("Could not update production aliases: %s", e)
+
     # Log to MLflow if configured; this is safe to run even if server unavailable.
     try:
+        mlflow = _safe_import_mlflow()
+        if mlflow is None or not hasattr(mlflow, "start_run"):
+            raise RuntimeError("mlflow is not installed or importable")
+
         with mlflow.start_run(run_name="baseline_logreg"):
             mlflow.log_params(
                 {

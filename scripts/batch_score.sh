@@ -10,6 +10,11 @@ if [ -f "${REPO_ROOT}/.venv/bin/activate" ]; then
   source "${REPO_ROOT}/.venv/bin/activate"
 fi
 
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
+  PYTHON_BIN="python"
+fi
+
 LOCAL_REGISTRY="${REPO_ROOT}/artifacts/registry"
 LOCAL_MODELS="${REPO_ROOT}/artifacts/models"
 LOCAL_PRED="${REPO_ROOT}/data/predictions"
@@ -26,7 +31,7 @@ dir_nonempty() {
 # If user explicitly set CHURN_MLOPS_CONFIG and it exists, trust it
 if [ "${CHURN_MLOPS_CONFIG:-}" != "" ] && [ -f "${CHURN_MLOPS_CONFIG}" ]; then
   echo "Using CHURN_MLOPS_CONFIG=${CHURN_MLOPS_CONFIG}"
-  python -m churn_mlops.inference.batch_score
+  "${PYTHON_BIN}" -m churn_mlops.inference.batch_score
   exit 0
 fi
 
@@ -83,4 +88,4 @@ YAML
   fi
 fi
 
-python -m churn_mlops.inference.batch_score
+"${PYTHON_BIN}" -m churn_mlops.inference.batch_score

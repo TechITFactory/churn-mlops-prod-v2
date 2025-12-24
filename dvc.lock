@@ -1,0 +1,114 @@
+schema: '2.0'
+stages:
+  generate_data:
+    cmd: PYTHONPATH=src ./scripts/generate_data.sh
+    outs:
+    - path: data/raw
+      hash: md5
+      md5: 8a870762be40022d5e3f35fb004b9c06.dir
+      size: 29781277
+      nfiles: 2
+  validate_data:
+    cmd: PYTHONPATH=src ./scripts/validate_data.sh
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 8a870762be40022d5e3f35fb004b9c06.dir
+      size: 29781277
+      nfiles: 2
+  prepare_data:
+    cmd: PYTHONPATH=src ./scripts/prepare_data.sh
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 8a870762be40022d5e3f35fb004b9c06.dir
+      size: 29781277
+      nfiles: 2
+    outs:
+    - path: data/processed/events_clean.csv
+      hash: md5
+      md5: fea5bcd4c18681defff704229a08bd9f
+      size: 34935577
+    - path: data/processed/user_daily.csv
+      hash: md5
+      md5: ae71db5d2c1a7366a47f9cf87c656878
+      size: 26805779
+    - path: data/processed/users_clean.csv
+      hash: md5
+      md5: d5fd2e18a9314ab66802fb2f92f0ac2a
+      size: 104139
+  build_features:
+    cmd: PYTHONPATH=src ./scripts/build_features.sh
+    deps:
+    - path: data/processed/user_daily.csv
+      hash: md5
+      md5: ae71db5d2c1a7366a47f9cf87c656878
+      size: 26805779
+    outs:
+    - path: data/features/user_features_daily.csv
+      hash: md5
+      md5: 2e127daf132ba76c43b89c7df273728b
+      size: 76294847
+  build_labels:
+    cmd: PYTHONPATH=src ./scripts/build_labels.sh
+    deps:
+    - path: data/processed/user_daily.csv
+      hash: md5
+      md5: ae71db5d2c1a7366a47f9cf87c656878
+      size: 26805779
+    outs:
+    - path: data/processed/labels_daily.csv
+      hash: md5
+      md5: 6d8ea21564a1ebff6c7c05f4393e72b4
+      size: 3632175
+  build_training_set:
+    cmd: PYTHONPATH=src ./scripts/build_training_set.sh
+    deps:
+    - path: data/features/user_features_daily.csv
+      hash: md5
+      md5: 2e127daf132ba76c43b89c7df273728b
+      size: 76294847
+    - path: data/processed/labels_daily.csv
+      hash: md5
+      md5: 6d8ea21564a1ebff6c7c05f4393e72b4
+      size: 3632175
+    outs:
+    - path: data/features/training_dataset.csv
+      hash: md5
+      md5: fa146e681d8c9a837ffb9031e94f15db
+      size: 58137528
+  train_baseline:
+    cmd: PYTHONPATH=src ./scripts/train_baseline.sh
+    deps:
+    - path: data/features/training_dataset.csv
+      hash: md5
+      md5: fa146e681d8c9a837ffb9031e94f15db
+      size: 58137528
+    outs:
+    - path: artifacts/metrics
+      hash: md5
+      md5: dcfaf4d95a850b5079fa28ad486c240f.dir
+      size: 3422
+      nfiles: 2
+    - path: artifacts/models
+      hash: md5
+      md5: 5ca2c4f6a51fa7230843b1ac41c4d8d2.dir
+      size: 18282
+      nfiles: 2
+  batch_score:
+    cmd: PYTHONPATH=src ./scripts/batch_score_latest.sh
+    deps:
+    - path: artifacts/models/production_latest.joblib
+      hash: md5
+      md5: 5c6812be65f5e9e3e4d05953f5f44510
+      size: 9141
+    - path: data/features/user_features_daily.csv
+      hash: md5
+      md5: 2e127daf132ba76c43b89c7df273728b
+      size: 76294847
+    outs:
+    - path: data/predictions
+      hash: md5
+      md5: e15f399797cbe0d01ae643f6a04893a7.dir
+      size: 190945
+      nfiles: 3

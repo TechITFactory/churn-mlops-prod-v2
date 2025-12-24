@@ -10,6 +10,11 @@ if [ -f "${REPO_ROOT}/.venv/bin/activate" ]; then
   source "${REPO_ROOT}/.venv/bin/activate"
 fi
 
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
+  PYTHON_BIN="python"
+fi
+
 LOCAL_OUT="${REPO_ROOT}/data/raw"
 CONTAINER_OUT="/app/data/raw"
 
@@ -24,7 +29,7 @@ fi
 
 echo "Generating synthetic data into: ${OUT_DIR}"
 
-python -m churn_mlops.data.generate_synthetic \
+"${PYTHON_BIN}" -m churn_mlops.data.generate_synthetic \
   --output-dir "${OUT_DIR}" \
   --n-users 2000 \
   --days 120 \
