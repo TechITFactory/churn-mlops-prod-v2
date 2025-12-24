@@ -14,7 +14,6 @@ Then upload churn_pipeline.yaml to the KFP UI.
 
 from kfp import compiler, dsl
 
-
 # Update these defaults for your ECR repo and bucket
 CHURN_ML_IMAGE = "public.ecr.aws/REPLACE/churn-ml:latest"
 S3_BUCKET = "s3://REPLACE-ME-BUCKET/churn-mlops-prod-v2"

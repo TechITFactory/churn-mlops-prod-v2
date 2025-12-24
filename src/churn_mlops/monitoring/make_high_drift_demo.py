@@ -10,7 +10,6 @@ import pandas as pd
 from churn_mlops.common.config import load_config
 from churn_mlops.common.logging import setup_logging
 
-
 DRIFT_FEATURE_COLS = [
     "sessions_7d",
     "watch_minutes_7d",
